@@ -16,7 +16,6 @@
 
 using namespace std;
 using namespace cv;
-ofstream myfile;
 Mat old_rgb,old_depth;
 bool first_img = true;
 Eigen::Matrix<double,4,1> position;
@@ -26,6 +25,8 @@ Point2f pixel2cam(Point2f p,Mat K){
 		(p.y - K.at<float>(1,2)) / K.at<float>(1,1)
 	);
 }
+
+
 
 void bundleAdjustment(vector<Point3f> points_3d, vector<Point2f> points_2d, Mat K, Mat R, Mat t)
 {
@@ -160,8 +161,9 @@ void visual_odometry(Mat img_1, Mat img_2, Mat d1, Mat d2){
 		int y = int(key_point_1[good_matches[i].queryIdx].pt.y);
 	    //float d = d1.at<short int>(cv::Point(x,y)) / 1000.0;
         
-		ushort d = d1.at<unsigned short>(y,x);		
-		if ( d == 0 )   // bad depth
+		//ushort d = d1.at<unsigned short>(x,y);		
+		ushort d = d1.ptr<ushort>(y)[x];
+        if ( d == 0 )   // bad depth
             continue;
 		
 		float dd = d/1000.0;
@@ -177,10 +179,11 @@ void visual_odometry(Mat img_1, Mat img_2, Mat d1, Mat d2){
 	Mat r, t, R;
 	solvePnP(pts_3d,pts_2d,K,Mat(),r,t,false);//,cv::SOLVEPNP_EPNP);
 	cv::Rodrigues ( r, R );
+    /*
     cout << "R=" << endl;
 	cout << R << endl;
     cout << "t=" <<endl;
-    cout << t << endl;
+    cout << t << endl;*/
     bundleAdjustment(pts_3d,pts_2d,K,R,t);	
     
 }
@@ -199,8 +202,8 @@ int main(int argc, char ** argv){
 
     //position << 1.3563,0.6305,1.6380,1;
 
-    //position << 1.3563,0.6305,1.6380,1;
-    position << 0,0,0,1;
+    position << 1.3563,0.6305,1.6380,1;
+    //position << 0,0,0,1;
     ifstream fin ("associate.txt");
     vector<string> rgb_files, depth_files;
     vector<double> rgb_times, depth_times;
@@ -215,17 +218,16 @@ int main(int argc, char ** argv){
         depth_times.push_back(atof(depth_time.c_str()));
         depth_files.push_back("data/"+depth_file);
     }
-    /*
     for(int i=0;i<rgb_files.size();i++){
         Mat color = cv::imread(rgb_files[i]);
-        Mat depth = cv::imread(depth_files[i]);
-        //Mat depth = imread(depth_files[i], CV_LOAD_IMAGE_UNCHANGED);
+        //Mat depth = cv::imread(depth_files[i]);
+        Mat depth = imread(depth_files[i], CV_LOAD_IMAGE_UNCHANGED);
         callback(color,depth);
         
         
         
     }
-    */
+    /*
     Mat color = cv::imread("1.png");
     Mat depth = cv::imread("1_depth.png");
     Mat d1 = imread("1_depth.png", CV_LOAD_IMAGE_UNCHANGED);
@@ -234,7 +236,7 @@ int main(int argc, char ** argv){
     depth = cv::imread("2_depth.png");
     Mat d2 = imread("2_depth.png", CV_LOAD_IMAGE_UNCHANGED);
     callback(color,d2);
-	
+	*/
     return 0;
 }
 
